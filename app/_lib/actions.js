@@ -1,31 +1,36 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { auth, signIn, signOut } from "./auth"
 import { supabase } from "./supabase"
 
 export async function updateGuest(formData) {
-    const session = await auth()
-    if (!session) throw new Error("You must be logged in to update your guest profile.")
+  const session = await auth()
+  if (!session)
+    throw new Error("You must be logged in to update your guest profile.")
 
-    const nationalID = formData.get("nationalID")
-    const [nationality, countryFlag] = formData.get("nationality").split('%')
+  const nationalID = formData.get("nationalID")
+  const [nationality, countryFlag] = formData.get("nationality").split("%")
 
-    if (!/^[a-zA-Z0-9]{6,12}$/.test(nationalID)) throw new Error("Please provide valid national ID.")
+  if (!/^[a-zA-Z0-9]{6,12}$/.test(nationalID))
+    throw new Error("Please provide valid national ID.")
 
-    const updateData = { nationalID, nationality, countryFlag }
+  const updateData = { nationalID, nationality, countryFlag }
 
-    const { data, error } = await supabase
-        .from("guests")
-        .update(updateData)
-        .eq("id", session.user.guestId)
+  const { data, error } = await supabase
+    .from("guests")
+    .update(updateData)
+    .eq("id", session.user.guestId)
 
-    if (error) throw new Error("Guest could not be updated")
+  if (error) throw new Error("Guest could not be updated")
+
+  revalidatePath("/account/profile")
 }
 
 export async function signInAction() {
-    await signIn("google", { redirectTo: "/account" })
+  await signIn("google", { redirectTo: "/account" })
 }
 
 export async function signOutAction() {
-    await signOut("google", { redirectTo: "/" })
+  await signOut("google", { redirectTo: "/" })
 }
